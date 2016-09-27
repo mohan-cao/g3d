@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -11,11 +12,11 @@ import java.util.Stack;
 public class DigraphSort {
 	private static HashMap<Node,List<Node>> predEdges;
 	private static Set<Node> nodes;
-	private static StringBuilder output;
+	private static ArrayList<ArrayList<ArrayList<Node>>> sData;
 	static {
 		predEdges = new HashMap<Node,List<Node>>();
-		output = new StringBuilder();
-		nodes = new HashSet<Node>();
+		sData = new ArrayList<ArrayList<ArrayList<Node>>>();
+		nodes = new LinkedHashSet<Node>();
 	}
 	
 	
@@ -71,14 +72,15 @@ public class DigraphSort {
 		Node node2;
 		for(int i=0;i<arcs;i++){
 			split = in.nextLine().split("\\s"); //split by space
-			temp = predEdges.get(split[1]); //get list of predecessors
+			node1 = new Node(split[1]);
+			temp = predEdges.get(node1); //get list of predecessors
 			node2 = new Node(split[0]); //create new node of predecessor
 			if(temp!=null){ 
 				temp.add(node2);
 			}else{
 				temp = new LinkedList<Node>();
 				temp.add(node2);
-				predEdges.put(node1=new Node(split[1]), temp);
+				predEdges.put(node1, temp);
 				nodes.add(node1);
 			}
 			nodes.add(node2);
