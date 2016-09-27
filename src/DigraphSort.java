@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -13,27 +14,31 @@ public class DigraphSort {
 	private static HashMap<Node,List<Node>> predEdges;
 	private static Set<Node> nodes;
 	private static ArrayList<ArrayList<ArrayList<Node>>> sData;
+	private static boolean currentNodeUpdated;
 	static {
 		predEdges = new HashMap<Node,List<Node>>();
 		sData = new ArrayList<ArrayList<ArrayList<Node>>>();
 		nodes = new LinkedHashSet<Node>();
+		currentNodeUpdated=false;
 	}
 	
 	
 	public static void G3Dsort(){
 		//for all nodes, do G3Dsort on them.
-		for(Node n : nodes){
+		Iterator<Node> it = nodes.iterator();
+		Node n;
+		while(it.hasNext()){
+			n = it.next();
 			try {
-				G3Dsort(n, 0);
-			} catch (NodeSeenException e) {
-				//Should be impossible (caught by checking for empty set above)
-				e.printStackTrace();
+				G3Dsort(n);
+				System.out.println("Node"+n+" has strata: "+n._weight);
+			} catch(NodeSeenException ne){
+				
 			}
-			System.out.println("Node "+n+" Weight "+n._weight);
 		}
 	}
 	
-	public static int G3Dsort(Node x, int depth) throws NodeSeenException{
+	public static int G3Dsort(Node x) throws NodeSeenException{
 		if(x._seen){throw new NodeSeenException(x);} //check flag
 		x._seen=true;
 		int max = -1;
@@ -42,17 +47,43 @@ public class DigraphSort {
 		if(children!=null){
 			for(Node y : children){
 				try{
-					tmp = G3Dsort(y,depth+1);
+					tmp = G3Dsort(y);
 					if(tmp>max){
 						max = tmp;
 					}
 				}catch(NodeSeenException ne){
+					ne.printStackTrace();
+					boolean equals = false;
 					for(Node x1 : ne._nodes){
-						if(y.equals(x1)){
-							//end recursive backtracking and recalculate max
-						}else{
-							//collapse nodes
+						if(x.equals(x1)){
+							equals = true;
+							break;
 						}
+					}
+					if(equals){
+						//end recursive backtracking and recalculate max
+						Node n = ne.getNewNode();
+						List<Node> tempList = new LinkedList<Node>();
+						for(Node x1 : ne._nodes){
+							List<Node> nodes = predEdges.get(x1);
+							System.err.println(nodes);
+							if(nodes==null)continue;
+							for(Node n2 : nodes){
+								n2._seen=false;
+							}
+							tempList.addAll(nodes);
+							tempList.removeAll(ne._nodes);
+							predEdges.remove(x1);
+							predEdges.put(n, tempList);
+						}
+						tmp=G3Dsort(n);
+						if(tmp>max){
+							max = tmp;
+						}
+					}else{
+						//add to stack and rethrow
+						ne.addNodeUpdateStrata(x);
+						throw ne;
 					}
 				}
 			}
@@ -95,7 +126,7 @@ class Node implements Comparable<Node> {
 	public boolean _seen;
 	public Node(String name){
 		_name = name;
-		_weight = 0;
+		_weight = -1;
 		_seen = false;
 	}
 	public Node(String name, int weight){
