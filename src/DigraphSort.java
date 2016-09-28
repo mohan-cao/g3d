@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -9,17 +10,22 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.Stack;
+import java.util.TreeSet;
 
 public class DigraphSort {
 	private static HashMap<Node,List<Node>> predEdges;
 	private static Set<Node> nodes;
 	private static ArrayList<ArrayList<ArrayList<Node>>> sData;
-	private static boolean currentNodeUpdated;
+	private static Set<Node> nodesToRemove;
+	private static Set<Node> nodesToAdd;
+	private static boolean isDAG;
 	static {
 		predEdges = new HashMap<Node,List<Node>>();
 		sData = new ArrayList<ArrayList<ArrayList<Node>>>();
 		nodes = new LinkedHashSet<Node>();
-		currentNodeUpdated=false;
+		nodesToRemove = new HashSet<Node>();
+		nodesToAdd = new HashSet<Node>();
+		isDAG=true;
 	}
 	
 	
@@ -31,14 +37,22 @@ public class DigraphSort {
 			n = it.next();
 			try {
 				G3Dsort(n);
-				System.out.println("Node"+n+" has strata: "+n._weight);
-			} catch(NodeSeenException ne){
-				
-			}
+			} catch(NodeSeenException ne){}
+		}
+		if(isDAG){
+			System.out.println("DAG");
+		}else{
+			System.out.println("notDAG");
+		}
+		nodes.removeAll(nodesToRemove);
+		nodes.addAll(nodesToAdd);
+		for(Node n1 : nodes){
+			System.out.println("Node "+n1+" stratum "+n1._weight);
 		}
 	}
 	
 	public static int G3Dsort(Node x) throws NodeSeenException{
+		if(x._client!=null){x = x._client;}
 		if(x._seen){throw new NodeSeenException(x);} //check flag
 		x._seen=true;
 		int max = -1;
@@ -52,7 +66,7 @@ public class DigraphSort {
 						max = tmp;
 					}
 				}catch(NodeSeenException ne){
-					ne.printStackTrace();
+					isDAG=false;
 					boolean equals = false;
 					for(Node x1 : ne._nodes){
 						if(x.equals(x1)){
@@ -65,23 +79,27 @@ public class DigraphSort {
 						Node n = ne.getNewNode();
 						List<Node> tempList = new LinkedList<Node>();
 						for(Node x1 : ne._nodes){
+							x1._client = n;
 							List<Node> nodes = predEdges.get(x1);
-							System.err.println(nodes);
 							if(nodes==null)continue;
 							for(Node n2 : nodes){
 								n2._seen=false;
 							}
 							tempList.addAll(nodes);
-							tempList.removeAll(ne._nodes);
-							predEdges.remove(x1);
-							predEdges.put(n, tempList);
 						}
+						for(Node x1 : ne._nodes){
+							predEdges.put(x1, tempList);
+						}
+						tempList.removeAll(ne._nodes);
+						nodesToAdd.add(n);
+						predEdges.put(n, tempList);
 						tmp=G3Dsort(n);
 						if(tmp>max){
 							max = tmp;
 						}
 					}else{
 						//add to stack and rethrow
+						nodesToRemove.add(x);
 						ne.addNodeUpdateStrata(x);
 						throw ne;
 					}
@@ -89,6 +107,7 @@ public class DigraphSort {
 			}
 		}
 		x._weight=max+1;
+		//TODO: DEBUG System.err.println(x+" weight set to "+x._weight);
 		x._seen=false;
 		return max+1;
 		
@@ -122,6 +141,7 @@ public class DigraphSort {
 }
 class Node implements Comparable<Node> {
 	public String _name;
+	public Node _client;
 	public Integer _weight;
 	public boolean _seen;
 	public Node(String name){
@@ -155,21 +175,16 @@ class Node implements Comparable<Node> {
 class NodeSeenException extends Exception{
 	private static final long serialVersionUID = 1L;
 	public List<Node> _nodes;
-	public int minWeight;
+	public int maxWeight;
 	public NodeSeenException(Node x){
 		_nodes = new LinkedList<Node>();
 		_nodes.add(x);
-		minWeight = x._weight;
+		maxWeight = x._weight;
 	}
 	public void addNodeUpdateStrata(Node x){
 		_nodes.add(x);
-		if(x._weight<minWeight){
-			minWeight = x._weight;
-		}
-	}
-	public void updateCollapsedNodes(Map<Node,List<Node>> edges){
-		for(Node n : _nodes){
-			edges.remove(n);
+		if(x._weight>maxWeight){
+			maxWeight = x._weight;
 		}
 	}
 	public Node getNewNode(){
@@ -178,7 +193,7 @@ class NodeSeenException extends Exception{
 			str.append(n+" ");
 		}
 		str.deleteCharAt(str.length()-1);
-		return new Node(str.toString(),minWeight);
+		return new Node(str.toString(),maxWeight);
 	}
 }
 class NotDAGException extends Exception{
