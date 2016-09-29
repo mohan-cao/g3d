@@ -76,6 +76,8 @@ public class DigraphSort {
 							predEdges.remove(x1);
 							predEdges.put(n, tempList);
 						}
+						nodes.removeAll(ne._nodes);
+						nodes.add(n);
 						tmp=G3Dsort(n);
 						if(tmp>max){
 							max = tmp;
