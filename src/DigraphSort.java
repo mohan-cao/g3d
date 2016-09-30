@@ -1,17 +1,18 @@
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.TreeSet;
 
 public class DigraphSort {
 	private static HashMap<Node,List<Node>> predEdges; //predecessor edges
-	private static Set<Node> nodes; //
+	private static Set<Node> nodes; //set of nodes 
 	private static ArrayList<ArrayList<ArrayList<Node>>> sData;
 	private static Set<Node> nodesToRemove;
 	private static Set<Node> nodesToAdd;
@@ -22,7 +23,7 @@ public class DigraphSort {
 		ArrayList<ArrayList<Node>> arrarr = new ArrayList<ArrayList<Node>>();
 		arrarr.add(new ArrayList<Node>());
 		sData.add(arrarr);
-		nodes = new LinkedHashSet<Node>();
+		nodes = new HashSet<Node>();
 		nodesToRemove = new HashSet<Node>();
 		nodesToAdd = new HashSet<Node>();
 		isDAG=true;
@@ -44,15 +45,15 @@ public class DigraphSort {
 		}else{
 			System.out.println("nonDAG");
 		}
+		System.err.println(nodes);
 		nodes.removeAll(nodesToRemove);
+		System.err.println(nodesToRemove);
 		nodes.addAll(nodesToAdd);
+		System.err.println(nodesToAdd);
 		ArrayList<Node> arr = new ArrayList<Node>(nodes);
 		Collections.sort(arr);
-		int i = 0;
-		for(Node n3 : arr){
-			System.out.println("Node "+n3+" stratum "+n3._weight);
-		}
-		/*for(ArrayList<ArrayList<Node>> n1 : sData){
+		
+		for(ArrayList<ArrayList<Node>> n1 : sData){
 			System.out.println(n1.size());
 			for(ArrayList<Node> n2 : n1){
 				System.out.println(n2.size());
@@ -60,7 +61,7 @@ public class DigraphSort {
 					System.out.println("Node "+n3+" stratum "+n3._weight);
 				}
 			}
-		}*/
+		}
 	}
 	
 	public static int G3Dsort(Node x) throws NodeSeenException{
@@ -72,12 +73,14 @@ public class DigraphSort {
 		List<Node> children = predEdges.get(x);
 		if(children!=null){
 			for(Node y : children){
+				if(y.equals(x)){continue;}
 				try{
 					tmp = G3Dsort(y);
 					if(tmp>max){
 						max = tmp;
 					}
 				}catch(NodeSeenException ne){
+					//turns out you need to goto line 68, otherwise it repeats for each children node again. RIP.
 					isDAG=false;
 					boolean equals = false;
 					for(Node x1 : ne._nodes){
@@ -152,33 +155,60 @@ public class DigraphSort {
 	}
 }
 class Node implements Comparable<Node> {
-	public String _name;
+	public List<Integer> _name;
 	public Node _client;
 	public Integer _weight;
 	public boolean _seen;
 	public Node(String name){
-		_name = name;
+		_name = new LinkedList<Integer>();
+		for(String n : name.split("\\s+")){
+		_name.add(Integer.parseInt(n));
+		}
 		_weight = -1;
 		_seen = false;
 	}
 	public Node(String name, int weight){
-		_name = name;
+		_name = new LinkedList<Integer>();
+		for(String n : name.split("\\s+")){
+		_name.add(Integer.parseInt(n));
+		}
 		_weight = weight;
 		_seen = false;
 	}
 	
 	public int compareTo(Node arg0) {
-		return this._weight-arg0._weight;
+		//need to compare weights
+		Integer a = 0;
+		Integer b = 0;
+		int maxSize = Math.max(_name.size(), arg0._name.size());
+		for(int i=0;i<maxSize;i++){
+			a = this._name.get(i);
+			b = arg0._name.get(i);
+			if(a==null) return -1;
+			if(b==null) return 1;
+			if(a-b==0){
+				if(i>=arg0._name.size()-1){
+					return 1;
+				}else if(i>=_name.size()-1){
+					return -1;
+				}
+				continue;
+			}
+			return a-b;
+		}
+		return a-b;
 	}
 	public String toString(){
-		return _name;
+		String str = _name.get(0).toString();
+		for(int i=1;i<_name.size();i++){
+			str += " " + i;
+		}
+		return str;
 	}
 	public boolean equals(Object obj){
-		if(obj instanceof Node){
 			Node node = (Node) obj;
 			return node._name.equals(this._name);
-		}
-		return false;
+		
 	}
 	public int hashCode(){
 		return _name.hashCode();
@@ -186,15 +216,16 @@ class Node implements Comparable<Node> {
 }
 class NodeSeenException extends Exception{
 	private static final long serialVersionUID = 1L;
-	public List<Node> _nodes;
+	public TreeSet<Node> _nodes;
 	public int maxWeight;
 	public NodeSeenException(Node x){
-		_nodes = new LinkedList<Node>();
+		_nodes = new TreeSet<Node>();
 		_nodes.add(x);
 		maxWeight = x._weight;
 	}
 	public void addNodeUpdateStrata(Node x){
-		_nodes.add(x);
+		boolean valid = _nodes.add(x);
+		System.err.println("Exception add node "+x+" "+_nodes+" isequal to first" + valid);
 		if(x._weight>maxWeight){
 			maxWeight = x._weight;
 		}

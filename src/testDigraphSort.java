@@ -66,6 +66,18 @@ public class testDigraphSort {
 		assertEquals(strOut.toString(),_outputstream.toString());
 		
 	}
+	@Test
+	public void test4() {
+		//make test cases below
+		strIn.append("10\n11 12\n12 13\n21 22\n22 23\n12 23\n31 23\n23 24\n23 34\n41 22\n41 34\n");
+		strIn.submit();
+		
+		//make expected output cases below
+		strOut.append("DAG\n4\n4\n11\n21\n31\n41\n2\n12\n22\n2\n13\n23\n2\n24\n34\n");
+		
+		assertEquals(strOut.toString(),_outputstream.toString());
+		
+	}
 
 }
 
