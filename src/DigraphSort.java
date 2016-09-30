@@ -1,20 +1,17 @@
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.Stack;
-import java.util.TreeSet;
 
 public class DigraphSort {
-	private static HashMap<Node,List<Node>> predEdges;
-	private static Set<Node> nodes;
+	private static HashMap<Node,List<Node>> predEdges; //predecessor edges
+	private static Set<Node> nodes; //
 	private static ArrayList<ArrayList<ArrayList<Node>>> sData;
 	private static Set<Node> nodesToRemove;
 	private static Set<Node> nodesToAdd;
@@ -22,6 +19,9 @@ public class DigraphSort {
 	static {
 		predEdges = new HashMap<Node,List<Node>>();
 		sData = new ArrayList<ArrayList<ArrayList<Node>>>();
+		ArrayList<ArrayList<Node>> arrarr = new ArrayList<ArrayList<Node>>();
+		arrarr.add(new ArrayList<Node>());
+		sData.add(arrarr);
 		nodes = new LinkedHashSet<Node>();
 		nodesToRemove = new HashSet<Node>();
 		nodesToAdd = new HashSet<Node>();
@@ -42,13 +42,25 @@ public class DigraphSort {
 		if(isDAG){
 			System.out.println("DAG");
 		}else{
-			System.out.println("notDAG");
+			System.out.println("nonDAG");
 		}
 		nodes.removeAll(nodesToRemove);
 		nodes.addAll(nodesToAdd);
-		for(Node n1 : nodes){
-			System.out.println("Node "+n1+" stratum "+n1._weight);
+		ArrayList<Node> arr = new ArrayList<Node>(nodes);
+		Collections.sort(arr);
+		int i = 0;
+		for(Node n3 : arr){
+			System.out.println("Node "+n3+" stratum "+n3._weight);
 		}
+		/*for(ArrayList<ArrayList<Node>> n1 : sData){
+			System.out.println(n1.size());
+			for(ArrayList<Node> n2 : n1){
+				System.out.println(n2.size());
+				for(Node n3 : n2){
+					System.out.println("Node "+n3+" stratum "+n3._weight);
+				}
+			}
+		}*/
 	}
 	
 	public static int G3Dsort(Node x) throws NodeSeenException{
@@ -107,7 +119,7 @@ public class DigraphSort {
 			}
 		}
 		x._weight=max+1;
-		//TODO: DEBUG System.err.println(x+" weight set to "+x._weight);
+		System.err.println(x+" weight set to "+x._weight);
 		x._seen=false;
 		return max+1;
 		
