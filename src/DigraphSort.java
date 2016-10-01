@@ -1,31 +1,61 @@
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
+import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
 
 public class DigraphSort {
-	private static HashMap<Node,List<Node>> predEdges; //predecessor edges
-	private static Set<Node> nodes; //set of nodes 
-	private static ArrayList<ArrayList<Node>> sData;
+	private static HashMap<Node,TreeSet<Node>> predEdges; //predecessor edges
+	private static TreeSet<Node> nodes; //set of nodes 
 	private static Set<Node> nodesToRemove;
 	private static Set<Node> nodesToAdd;
 	private static boolean isDAG;
 	static {
-		predEdges = new HashMap<Node,List<Node>>();
-		sData = new ArrayList<ArrayList<Node>>();
+		setup(); //for testability, call setup before unit testing
+	}
+	public static void setup(){
+		predEdges = new HashMap<Node,TreeSet<Node>>(); //predecessor edges
 		nodes = new TreeSet<Node>();
 		nodesToRemove = new HashSet<Node>();
 		nodesToAdd = new HashSet<Node>();
 		isDAG=true;
 	}
 	
+	private static Node mergeNodes(NodeSeenException ne){
+		if(ne._nodes.size()>1){
+			//end recursive backtracking and recalculate max
+			Node n = ne.getNewNode();
+			TreeSet<Node> tempList = new TreeSet<Node>();
+			//for each node in the merged node set, 
+			for(Node x1 : ne._nodes){
+				x1._client = n;
+				System.err.println("Client for node" +x1 + " set to "+x1._client);
+				TreeSet<Node> nodes = predEdges.get(x1);
+				if(nodes==null)continue;
+				for(Node n2 : nodes){
+					n2._seen=false;
+				}
+				tempList.addAll(nodes);
+			}
+			for(Node x1 : ne._nodes){
+				predEdges.put(x1, tempList);
+			}
+			for(Node rem : ne._nodes){
+				tempList.remove(rem);
+			}
+			nodesToAdd.add(n);
+			nodesToRemove.addAll(ne._nodes);
+			nodes.removeAll(ne._nodes); //remove all old nodes
+			nodes.add(n); //add new merged node
+			predEdges.put(n, tempList);
+			return n;
+		}
+		return ne._nodes.first();
+	}
 	
 	public static void G3Dsort(){
 		System.err.println("new test");
@@ -34,18 +64,23 @@ public class DigraphSort {
 		Node n;
 		while(!arr.isEmpty()){
 			n = arr.remove(0);
+			NodeSeenException ne = null;
 			try {
 				G3Dsort(n);
 				System.err.println(nodes);
-			} catch(NodeSeenException ne){
-				
+			} catch(NodeSeenException ne2){
+				System.err.println("Node "+n+" cancelled");
+				n._weight=0;
+				mergeNodes(ne2);
 			}
+			
+			
 			System.err.println("Nodes before adding:" +nodes);
 			System.err.println("Added: " +nodesToAdd);
 			System.err.println("Removed: " +nodesToRemove);
-			nodes.removeAll(nodesToRemove);
-			nodes.addAll(nodesToAdd);
+			
 			arr.addAll(nodesToAdd);
+			arr.removeAll(nodesToRemove);
 			nodesToAdd.clear();
 			nodesToRemove.clear();
 		}
@@ -54,8 +89,31 @@ public class DigraphSort {
 		}else{
 			System.out.println("nonDAG");
 		}
-		for(Node finished : nodes){
-			System.out.println("Node "+finished+" stratum "+finished._weight);
+		int digraphMaxWeight = 0;
+		for(Node nq : nodes){
+			if(digraphMaxWeight<nq._weight)digraphMaxWeight=nq._weight;
+		}
+		System.out.println(digraphMaxWeight+1);
+		for(int i=0;i<=digraphMaxWeight;i++){
+			Queue<Node> q = new LinkedList<Node>();
+			Iterator<Node> it = nodes.iterator();
+			Node tempnode;
+			while(it.hasNext()){
+				tempnode = it.next();
+				if(tempnode._weight.equals(i)){
+					q.add(tempnode);
+					it.remove();
+				}
+			}
+			System.out.println(q.size());
+			for(Node out : q){
+				Iterator<Integer> it2 = out._name.iterator();
+				System.out.print(it2.next());
+				while(it2.hasNext()){
+				System.out.print(" "+it2.next());
+				}
+				System.out.println();
+			}
 		}
 		/*System.out.println(sData.size());
 		for(ArrayList<Node> n1 : sData){
@@ -67,16 +125,15 @@ public class DigraphSort {
 	}
 	
 	public static int G3Dsort(Node x) throws NodeSeenException{
-		if(x._client!=null){x = x._client;}
+		if(x._client!=null){System.err.println(x +" has a client");x = x._client;}else{System.err.println(x+" has no client");}
 		if(x._seen){throw new NodeSeenException(x);} //check flag
 		x._seen=true;
 		int max = -1;
 		int tmp = -1;
-		List<Node> children = predEdges.get(x);
+		TreeSet<Node> children = predEdges.get(x);
 		if(children!=null){
 			NodeSeenException ne = null;
 			for(Node y : children){
-				if(y.equals(x)){continue;}
 				try{
 					tmp = G3Dsort(y);
 					if(tmp>max){
@@ -88,7 +145,6 @@ public class DigraphSort {
 				}
 			}
 			if(ne!=null){
-				//turns out you need to goto line 68, otherwise it repeats for each children node again. RIP.
 				isDAG=false;
 				boolean equals = false;
 				for(Node x1 : ne._nodes){
@@ -99,33 +155,13 @@ public class DigraphSort {
 				}
 				if(equals){
 					//end recursive backtracking and recalculate max
-					Node n = ne.getNewNode();
-					List<Node> tempList = new LinkedList<Node>();
-					for(Node x1 : ne._nodes){
-						x1._client = n;
-						List<Node> nodes = predEdges.get(x1);
-						if(nodes==null)continue;
-						for(Node n2 : nodes){
-							n2._seen=false;
-						}
-						tempList.addAll(nodes);
-					}
-					for(Node x1 : ne._nodes){
-						predEdges.put(x1, tempList);
-					}
-					for(Node rem : ne._nodes){
-						tempList.remove(rem);
-					}
-					nodesToAdd.add(n);
-					nodesToRemove.addAll(ne._nodes);
-					predEdges.put(n, tempList);
+					Node n = mergeNodes(ne);
 					tmp=G3Dsort(n);
 					if(tmp>max){
 						max = tmp;
 					}
 				}else{
 					//add to stack and rethrow
-					
 					ne.addNodeUpdateStrata(x);
 					throw ne;
 				}
@@ -142,7 +178,7 @@ public class DigraphSort {
 		Scanner in = new Scanner(System.in);
 		int arcs = Integer.parseInt(in.nextLine());
 		String[] split;
-		List<Node> temp;
+		TreeSet<Node> temp;
 		Node node1;
 		Node node2;
 		for(int i=0;i<arcs;i++){
@@ -153,7 +189,7 @@ public class DigraphSort {
 			if(temp!=null){ 
 				temp.add(node2);
 			}else{
-				temp = new LinkedList<Node>();
+				temp = new TreeSet<Node>();
 				temp.add(node2);
 				predEdges.put(node1, temp);
 				nodes.add(node1);
@@ -230,11 +266,14 @@ class NodeSeenException extends Exception{
 	public TreeSet<Node> _nodes;
 	public int maxWeight;
 	public NodeSeenException(Node x){
+		if(x._client!=null) x=x._client;
 		_nodes = new TreeSet<Node>();
 		_nodes.add(x);
 		maxWeight = x._weight;
+		System.err.println("Exception create node "+x+" "+_nodes);
 	}
 	public void addNodeUpdateStrata(Node x){
+		if(x._client!=null){x=x._client;}
 		boolean valid = _nodes.add(x);
 		System.err.println("Exception add node "+x+" "+_nodes+" added? " + valid);
 		if(x._weight>maxWeight){
