@@ -78,7 +78,12 @@ public class testDigraphSort {
 		assertEquals(strOut.toString(),_outputstream.toString());
 		
 	}
-
+	@Test
+	public void testNodeComparator(){
+		Node n = new Node("2");
+		Node n2 = new Node("2");
+		assertEquals(0,n.compareTo(n2));
+	}
 }
 
 /**
