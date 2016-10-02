@@ -4,12 +4,13 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.util.TreeSet;
 
 import org.junit.Before;
 import org.junit.Test;
 
 public class testDigraphSort {
-	public InputStuff strIn;
+	public InputStuff2 strIn;
 	public StringBuffer strOut;
 	public ByteArrayOutputStream _outputstream;
 	
@@ -19,8 +20,8 @@ public class testDigraphSort {
 	 */
 	@Before
 	public void setUp(){
-		DigraphSort.setup();
-		strIn = new InputStuff(new StringBuffer());
+		DigraphSort3.setup();
+		strIn = new InputStuff2(new StringBuffer());
 		strOut = new StringBuffer();
 		ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
 		_outputstream = outputstream;
@@ -84,6 +85,14 @@ public class testDigraphSort {
 		Node n2 = new Node("2");
 		assertEquals(0,n.compareTo(n2));
 	}
+	@Test
+	public void testTreeSetSame(){
+		Node n = new Node("2");
+		TreeSet<Node> n2 = new TreeSet<Node>();
+		n2.add(n);
+		n2.first()._client = new Node("1");
+		assertEquals(n._client,n2.first()._client);
+	}
 }
 
 /**
@@ -102,6 +111,6 @@ class InputStuff {
 	public void submit(){
 		InputStream in = new ByteArrayInputStream(_str.toString().getBytes());
 		System.setIn(in);
-		DigraphSort.main(null);
+		DigraphSort3.main(null);
 	}
 }
